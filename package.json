@@ -1,0 +1,12 @@
+{
+    "author": "Calvin 'calzoneman'/'cyzon' Montgomery",
+    "name": "SimpleSnap",
+    "description": "Simple webserver for hosting temporary image files",
+    "version": "0.0.1",
+    "dependencies": {
+        "express": "*",
+        "mmmagic": "*",
+        "multiparty": "*",
+        "nedb": "*"
+    }
+}
