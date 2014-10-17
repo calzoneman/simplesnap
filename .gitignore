@@ -13,6 +13,13 @@ logs
 results
 im
 
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+tags
+
 npm-debug.log
 node_modules
-
