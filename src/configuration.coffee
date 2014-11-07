@@ -19,12 +19,7 @@ DEFAULT =
 
 class Configuration
     constructor: (config) ->
-        @config = {}
         for key, val of DEFAULT
-            @config[key] = val
-
-    getDatabaseConfiguration: ->
-        return @config.db
-
+            this[key] = val
 
 module.exports = Configuration
