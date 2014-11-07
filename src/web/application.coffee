@@ -14,7 +14,7 @@ class Application
             @app.listen(port, host)
 
     serveIndex: (req, res) ->
-        res.sendFile(path.resolve(__dirname, '..', '..', 'index.html'))
+        res.redirect('https://github.com/calzoneman/simplesnap')
 
     serveImage: (req, res) ->
         res.sendFile(req.params[0], root: @config.storageDir)
