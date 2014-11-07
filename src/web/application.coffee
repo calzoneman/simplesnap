@@ -5,6 +5,9 @@ class Application
     constructor: (@config, @db) ->
         @app = express()
 
+        @app.use(require('./authorization')(config, db))
+        @app.use(require('./fileparser')(config))
+
         extensions = [mime for mime, ext in @config.allowedMimeTypes]
         imagePath = "(#{@config.basePath.replace(/\//g, '\\/')}[a-zA-Z0-9]+\.(?:#{extensions}))"
         @app.get(new RegExp(imagePath), @serveImage)
