@@ -2,10 +2,11 @@ bookshelf = require 'bookshelf'
 knex = require 'knex'
 winston = require 'winston'
 uuid = require 'uuid'
+EventEmitter = require('events').EventEmitter
 
 buildSchema = require './schema'
 
-class Database
+class Database extends EventEmitter
     constructor: (@config) ->
         @knex = knex(@config)
         @bookshelf = bookshelf(@knex)
@@ -18,6 +19,7 @@ class Database
         buildSchema(@knex).then =>
             winston.info 'Database initialized'
             @ready = true
+            @emit 'ready'
         .catch (err) ->
             winston.error 'Database initialization failed', err, {}
 
@@ -52,17 +54,18 @@ class Database
             throw new Error('Database has not been initialized yet')
 
         User = @models.User
-        return User.forge(key: @genAPIKey()).save()
+        return User.forge(key: @genAPIKey()).save().tap((user) => @emit 'newuser', user.attributes)
 
     addImage: (file, uploader_key = null) ->
         data =
             filename: [@genFileHash(file.filename), file.extension].join('.')
+            expires: Date.now() + file.expiration
 
         if uploader_key
             data.user_key = uploader_key
 
         Image = @models.Image
-        return Image.forge(data).save()
+        return Image.forge(data).save().tap((image) => @emit 'newimage', image.attributes)
 
 
 module.exports = Database

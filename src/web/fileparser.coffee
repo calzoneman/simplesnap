@@ -11,7 +11,7 @@ module.exports = (config) ->
 
         form.on('progress', (bytesReceived, bytesExpected) ->
             if bytesReceived > config.maxFileSize or bytesExpected > config.maxFileSize
-                res.status(REQUEST_ENTITY_TOO_LARGE)
+                res.status(REQUEST_ENTITY_TOO_LARGE).json(error: 'Upload exceeds maximum size')
                 req.destroy()
         )
 
@@ -19,7 +19,11 @@ module.exports = (config) ->
             if err
                 return next(err)
 
-            req.files = files
+            req.files = {}
+            for key, value of files
+                req.files[key] = value[0]
+
+            req.body = req.body or {}
             for key, value of fields
                 req.body[key] = fields[key][0]
 
