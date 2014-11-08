@@ -8,12 +8,11 @@ INTERNAL_SERVER_ERROR = 500
 module.exports = (config) ->
     return (req, res, next) ->
         if not req.files or not req.files.image
-            next()
+            return next()
 
         magic = new Magic(mmmagic.MAGIC_MIME_TYPE)
 
         file = req.files.image
-        console.log file
         magic.detectFile(file.path, (err, mime) ->
             if err
                 res.status(INTERNAL_SERVER_ERROR).json(error: 'Failed to detect mime type of image')
@@ -24,6 +23,7 @@ module.exports = (config) ->
                 req.destroy()
             else
                 file.mime = mime
+                file.extension = config.allowedMimeTypes[mime]
                 next()
         )
 

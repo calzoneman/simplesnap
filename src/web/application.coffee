@@ -1,8 +1,11 @@
 express = require 'express'
 path = require 'path'
 ms = require 'ms'
+Promise = require 'bluebird'
+fs = Promise.promisifyAll(require 'fs')
 
 BAD_REQUEST = 400
+NOT_FOUND = 404
 INTERNAL_SERVER_ERROR = 500
 
 class Application
@@ -13,12 +16,14 @@ class Application
         @app.use(require('./fileparser')(config))
         @app.use(require('./detectmime')(config))
 
-        extensions = [mime for mime, ext in @config.allowedMimeTypes]
-        imagePath = "(#{@config.basePath.replace(/\//g, '\\/')}[a-zA-Z0-9]+\.(?:#{extensions}))"
+        extensions = (ext for mime, ext of @config.allowedMimeTypes).join('|')
+        basePath = @config.basePath.replace(/\//g, '\\/')
+        imagePath = "(#{basePath}[a-zA-Z0-9]+\.(?:#{extensions}))"
         @app.get(new RegExp(imagePath), @serveImage)
         @app.post('/upload', @uploadImage)
         @app.put('/upload', @uploadImage)
         @app.get('/', @serveIndex)
+        @app.use(@errorHandler)
 
         for [host, port] in @config.bindAddresses
             @app.listen(port, host)
@@ -26,10 +31,11 @@ class Application
     serveIndex: (req, res) =>
         if req.header(@config.authHeader)
             Image = @db.models.Image
-            Image.fetchAll(user_key: req.header(@config.authHeader)).then((images) ->
-                elems = images.map((image) ->
-                    "<li><a href=\"#{image.get('filename')}\">#{image.get('filename')}</a></li>"
-                )
+            Image.fetchAll(user_key: req.header(@config.authHeader)).then((images) =>
+                elems = images.map((image) =>
+                    filepath = @config.basePath + image.get('filename')
+                    "<li><a href=\"#{filepath}\">#{filepath}</a></li>"
+                ).join('')
                 html =  """
                         <!doctype html>
                         <html>
@@ -82,11 +88,28 @@ class Application
 
         file = req.files.image
         file.expiration = delay
-        @db.addImage(file, req.header(@config.authHeader)).then((image) ->
-            res.json(filename: image.get('filename'), expires: image.get('expires'))
+        data = null
+        @db.addImage(file, req.header(@config.authHeader)).then((image) =>
+            data =
+                filename: @config.basePath + image.get('filename')
+                expires: image.get('expires')
+            return fs.renameAsync(file.path,
+                    path.join(@config.storageDir, image.get('filename')))
+        ).then( ->
+            res.json(data)
         ).catch((err) ->
             res.status(INTERNAL_SERVER_ERROR).json(error: 'Upload failed (database error)')
             winston.error 'Upload failed:', err
         )
+
+    errorHandler: (err, req, res, next) ->
+        method = req.method.toLowerCase()
+        if err.code == 'ENOENT'
+            res.sendStatus(NOT_FOUND)
+        else
+            if req.method.toLowerCase() != 'get'
+                res.status(INTERNAL_SERVER_ERROR).json(error: 'Internal server error')
+            else
+                res.sendStatus(INTERNAL_SERVER_ERROR)
 
 module.exports = Application
