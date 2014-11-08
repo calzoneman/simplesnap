@@ -1,0 +1,40 @@
+#!/bin/bash
+
+SERVER="http://localhost:5000"
+KEY=`cat ~/.simplesnap_key`
+FILE="$1"
+if [ -z "$FILE" ];then
+    echo "No file specified"
+    exit -1
+fi
+
+EXPIRES=`zenity --list \
+    --title="Choose Expiration" \
+    --column="Expiration" \
+    10m \
+    1h \
+    12h \
+    1d \
+    7d \
+    30d`
+
+if [ -z "$EXPIRES" ]; then
+    exit 0
+fi
+
+RESULT=`curl -F "image=@$FILE" \
+    -F "expiration=$EXPIRES" \
+    -H "x-simplesnap-auth: $KEY" \
+    "$SERVER/upload"`
+
+ERROR=`echo "$RESULT" | grep -Poh '(?<="error":")[^"]*'`
+if [ ! -z "$ERROR" ]; then
+    notify-send "Upload failed ($FILE): $ERROR"
+    exit -1
+fi
+
+IMPATH=`echo "$RESULT" | grep -Poh '(?<="filename":")[^"]*'`
+if [ ! -z "$IMPATH" ]; then
+    echo -n "$SERVER$IMPATH" | xclip -i -selection clipboard
+    notify-send "Uploaded $FILE to $SERVER$IMPATH"
+fi
