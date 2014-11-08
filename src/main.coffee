@@ -50,9 +50,9 @@ if process.argv.length > 2
             User = db.models.User
             User.forge(key: process.argv[3]).fetch(require: true).then((user) ->
                 key = user.get('key')
-                user.destroy()
+                return user.destroy()
             ).then( ->
-                winston.info "Deleted user #{key}"
+                winston.info "Deleted user #{process.argv[3]}"
                 process.exit 0
             ).catch((err) ->
                 winston.error 'Deletion failed', err
