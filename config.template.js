@@ -72,6 +72,11 @@ module.exports = function (config) {
     config.expirationLimit = 30 * 24 * 60 * 60 * 1000
 
     /*
+     * Interval (in milliseconds) at which to run the task that deletes expired images
+     */
+    config.deleteExpiredInterval = 10 * 60 * 1000 // 10 minutes
+
+    /*
      * List of pairs [host, port] to bind the webserver to.
      * See http://nodejs.org/api/http.html#http_server_listen_port_hostname_backlog_callback
      */

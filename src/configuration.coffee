@@ -20,6 +20,7 @@ DEFAULT =
     allowAnonymousUploads: false
     authHeader: 'x-simplesnap-auth'
     expirationLimit: 30 * 24 * 60 * 60 * 1000
+    deleteExpiredInterval: 10 * 60 * 1000
     bindAddresses: [ ['', 5000] ]
 
 

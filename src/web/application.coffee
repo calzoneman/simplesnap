@@ -22,50 +22,41 @@ class Application
         @app.get(new RegExp(imagePath), @serveImage)
         @app.post('/upload', @uploadImage)
         @app.put('/upload', @uploadImage)
+        @app.get('/images', @serveImageList)
         @app.get('/', @serveIndex)
         @app.use(@errorHandler)
 
         for [host, port] in @config.bindAddresses
             @app.listen(port, host)
 
-    serveIndex: (req, res) =>
+    serveImageList: (req, res) =>
         if req.header(@config.authHeader)
             Image = @db.models.Image
             Image.fetchAll(user_key: req.header(@config.authHeader)).then((images) =>
                 elems = images.map((image) =>
                     filepath = @config.basePath + image.get('filename')
-                    "<li><a href=\"#{filepath}\">#{filepath}</a></li>"
-                ).join('')
-                html =  """
-                        <!doctype html>
-                        <html>
-                            <head>
-                                <title>Image List</title>
-                                <meta charset="utf-8">
-                            </head>
-                            <body>
-                                <ul>
-                                    #{elems}
-                                </ul>
-                            </body>
-                        </html>
-                        """
-                res.send(html)
+                    return "#{req.protocol}://#{req.header('host')}#{filepath}"
+                )
+
+                res.json(images: elems)
             )
         else
-            html =  """
-                    <!doctype html>
-                    <html>
-                        <head>
-                            <title>Image List</title>
-                            <meta charset="utf-8">
-                        </head>
-                        <body>
-                            Unable to list images (no <code>#{@config.authHeader}</code> header present)
-                        </body>
-                    </html>
-                    """
-            res.send(html)
+            res.json(error: "No #{@config.authHeader} header present")
+
+    serveIndex: (req, res) ->
+        html =  """
+                <!doctype html>
+                <html>
+                    <head>
+                        <title>Simplesnap</title>
+                        <meta charset="utf-8">
+                    </head>
+                    <body>
+                        This server is running <a href="https://github.com/calzoneman/simplesnap">simplesnap</a>.
+                    </body>
+                </html>
+                """
+        res.send(html)
 
     serveImage: (req, res) =>
         res.sendFile(req.params[0], root: @config.storageDir)
@@ -107,9 +98,6 @@ class Application
         if err.code == 'ENOENT'
             res.sendStatus(NOT_FOUND)
         else
-            if req.method.toLowerCase() != 'get'
-                res.status(INTERNAL_SERVER_ERROR).json(error: 'Internal server error')
-            else
-                res.sendStatus(INTERNAL_SERVER_ERROR)
+            res.status(INTERNAL_SERVER_ERROR).json(error: 'Internal server error')
 
 module.exports = Application

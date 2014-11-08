@@ -26,6 +26,7 @@ if process.argv.length > 2
                 process.exit 0
             ).catch((err) ->
                 winston.error 'Error creating user', err
+                process.exit -1
             )
         )
     else if process.argv[2] in ['--listusers', '-l']
@@ -37,8 +38,30 @@ if process.argv.length > 2
                 process.exit 0
             ).catch((err) ->
                 winston.error 'Error listing users', err
+                process.exit -1
             )
         )
+    else if process.argv[2] in ['--revokeuser', '-r']
+        if process.argv.length < 4
+            console.error "Usage: node #{process.argv[1]} --revokeuser <user key>"
+            process.exit -1
+
+        db.on('ready', ->
+            User = db.models.User
+            User.forge(key: process.argv[3]).fetch(require: true).then((user) ->
+                key = user.get('key')
+                user.destroy()
+            ).then( ->
+                winston.info "Deleted user #{key}"
+                process.exit 0
+            ).catch((err) ->
+                winston.error 'Deletion failed', err
+                process.exit -1
+            )
+        )
+
 else
     winston.info 'Initializing webserver'
     app = new Application(config, db)
+    winston.info 'Starting delete expired images task'
+    require('./expiretask')(config, db)
