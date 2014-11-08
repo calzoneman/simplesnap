@@ -9,7 +9,10 @@ DEFAULT =
         'image/bmp': 'bmp',
         'image/gif': 'gif',
         'image/jpeg': 'jpg',
-        'image/png': 'png'
+        'image/png': 'png',
+        'image/webp': 'webp',
+        'image/svg': 'svg',
+        'video/webm': 'webm'
     maxFileSize: 8 * 1024 * 1024
     uploadDir: path.resolve(__dirname, '..', 'uploads')
     storageDir: path.resolve(__dirname, '..', 'im')
@@ -17,7 +20,7 @@ DEFAULT =
     allowAnonymousUploads: false
     authHeader: 'x-simplesnap-auth'
     expirationLimit: 30 * 24 * 60 * 60 * 1000
-    bindAddresses: [ ['0.0.0.0', 5000] ]
+    bindAddresses: [ ['', 5000] ]
 
 
 class Configuration

@@ -1,4 +1,5 @@
 fs = require 'fs'
+path = require 'path'
 winston = require 'winston'
 
 Configuration = require './configuration'
@@ -7,6 +8,10 @@ Application = require './web/application'
 
 config = new Configuration()
 db = new Database(config.db)
+
+userConfigFile = path.join __dirname, '..', 'config.js'
+if fs.existsSync(userConfigFile)
+    require(userConfigFile)(config)
 
 if not fs.existsSync(config.uploadDir)
     fs.mkdirSync(config.uploadDir)
