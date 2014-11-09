@@ -60,6 +60,7 @@ if process.argv.length > 2
         )
 
 else
+    console.log 'cal should fix basePath'
     console.log 'Initializing webserver'
     app = new Application(config, db)
     console.log 'Starting delete expired images task'
