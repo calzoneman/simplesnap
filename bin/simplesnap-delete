@@ -14,11 +14,11 @@ RESULT=`curl -X DELETE \
 
 ERROR=`echo "$RESULT" | grep -Poh '(?<="error":")[^"]*'`
 if [ ! -z "$ERROR" ]; then
-    notify-send "Delete failed ($FILE): $ERROR"
+    echo "Delete failed ($FILE): $ERROR"
     exit -1
 fi
 
 DELETED=`echo "$RESULT" | grep -Poh '(?<="deleted":")[^"]*'`
 if [ ! -z "$DELETED" ]; then
-    notify-send "Deleted $DELETED"
+    echo "Deleted $DELETED"
 fi
