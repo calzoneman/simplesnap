@@ -18,13 +18,13 @@ class Application
 
         extensions = (ext for mime, ext of @config.allowedMimeTypes).join('|')
         basePath = @config.basePath.replace(/\//g, '\\/')
-        imagePath = "(#{basePath}[a-zA-Z0-9]+\.(?:#{extensions}))"
+        imagePath = "#{basePath}([a-zA-Z0-9]+\.(?:#{extensions}))"
         @app.get(new RegExp(imagePath), @serveImage)
         @app.delete(new RegExp(imagePath), @deleteImage)
-        @app.post('/upload', @uploadImage)
-        @app.put('/upload', @uploadImage)
-        @app.get('/images', @serveImageList)
-        @app.get('/', @serveIndex)
+        @app.post("#{@config.basePath}upload", @uploadImage)
+        @app.put("#{@config.basePath}upload", @uploadImage)
+        @app.get("#{@config.basePath}images", @serveImageList)
+        @app.get(@config.basePath, @serveIndex)
         @app.use(@errorHandler)
 
         for [host, port] in @config.bindAddresses
