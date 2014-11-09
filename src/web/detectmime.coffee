@@ -1,6 +1,6 @@
 mmmagic = require 'mmmagic'
 Magic = mmmagic.Magic
-winston = require 'winston'
+
 
 UNSUPPORTED_MEDIA_TYPE = 415
 INTERNAL_SERVER_ERROR = 500
@@ -17,7 +17,7 @@ module.exports = (config) ->
             if err
                 res.status(INTERNAL_SERVER_ERROR).json(error: 'Failed to detect mime type of image')
                 req.destroy()
-                winston.error 'Failed to detect mime type for %s', file, err
+                console.error 'Failed to detect mime type for %s: %s', file, err
             else if mime not of config.allowedMimeTypes
                 res.status(UNSUPPORTED_MEDIA_TYPE).json(error: "Illegal mime type #{mime}")
                 req.destroy()

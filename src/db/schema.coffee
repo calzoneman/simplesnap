@@ -1,4 +1,3 @@
-winston = require 'winston'
 Promise = require 'bluebird'
 
 TABLES =
@@ -17,7 +16,7 @@ module.exports = (knex) ->
     Promise.all(Object.keys(TABLES).map (table) ->
         knex.schema.hasTable(table).then (exists) ->
             if !exists
-                winston.info 'Creating table %s', table
+                console.log 'Creating table %s', table
                 knex.schema.createTable(table, TABLES[table])
             else
                 return true

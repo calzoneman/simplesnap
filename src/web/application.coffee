@@ -20,6 +20,7 @@ class Application
         basePath = @config.basePath.replace(/\//g, '\\/')
         imagePath = "(#{basePath}[a-zA-Z0-9]+\.(?:#{extensions}))"
         @app.get(new RegExp(imagePath), @serveImage)
+        @app.delete(new RegExp(imagePath), @deleteImage)
         @app.post('/upload', @uploadImage)
         @app.put('/upload', @uploadImage)
         @app.get('/images', @serveImageList)
@@ -29,13 +30,16 @@ class Application
         for [host, port] in @config.bindAddresses
             @app.listen(port, host)
 
+    getFullImagePath: (req, filename) =>
+        filepath = @config.basePath + filename
+        return "#{req.protocol}://#{req.header('host')}#{filepath}"
+
     serveImageList: (req, res) =>
         if req.header(@config.authHeader)
             Image = @db.models.Image
             Image.fetchAll(user_key: req.header(@config.authHeader)).then((images) =>
                 elems = images.map((image) =>
-                    filepath = @config.basePath + image.get('filename')
-                    return "#{req.protocol}://#{req.header('host')}#{filepath}"
+                    return @getFullImagePath(req, image.get('filename'))
                 )
 
                 res.json(images: elems)
@@ -82,15 +86,31 @@ class Application
         data = null
         @db.addImage(file, req.header(@config.authHeader)).then((image) =>
             data =
-                filename: @config.basePath + image.get('filename')
+                filename: @getFullImagePath(req, image.get('filename'))
                 expires: image.get('expires')
             return fs.renameAsync(file.path,
                     path.join(@config.storageDir, image.get('filename')))
         ).then( ->
             res.json(data)
         ).catch((err) ->
-            res.status(INTERNAL_SERVER_ERROR).json(error: 'Upload failed (database error)')
-            winston.error 'Upload failed:', err
+            res.status(INTERNAL_SERVER_ERROR).json(error: 'Unknown error')
+            console.error 'Upload failed:', err
+        )
+
+    deleteImage: (req, res) =>
+        filename = req.params[0].replace /^\//, ''
+        Image = @db.models.Image
+        Image.forge(filename: filename).fetch(require: true).tap((image) =>
+            return fs.unlinkAsync(path.join(@config.storageDir, filename))
+        ).then((image) ->
+            return image.destroy()
+        ).then( =>
+            res.json(deleted: @getFullImagePath(req, filename))
+        ).catch(Image.NotFoundError, (err) ->
+            res.status(404).json(error: 'Image not found')
+        ).catch((err) ->
+            res.status(INTERNAL_SERVER_ERROR).json(error: 'Unknown error')
+            console.error 'Deletion failed', err
         )
 
     errorHandler: (err, req, res, next) ->
@@ -98,6 +118,7 @@ class Application
         if err.code == 'ENOENT'
             res.sendStatus(NOT_FOUND)
         else
+            console.error 'HTTP Server Error', err
             res.status(INTERNAL_SERVER_ERROR).json(error: 'Internal server error')
 
 module.exports = Application

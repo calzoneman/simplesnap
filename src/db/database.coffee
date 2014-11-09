@@ -1,6 +1,5 @@
 bookshelf = require 'bookshelf'
 knex = require 'knex'
-winston = require 'winston'
 uuid = require 'uuid'
 EventEmitter = require('events').EventEmitter
 
@@ -17,11 +16,11 @@ class Database extends EventEmitter
             @knex.raw('PRAGMA foreign_keys = ON;')
 
         buildSchema(@knex).then =>
-            winston.info 'Database initialized'
+            console.log 'Database initialized'
             @ready = true
             @emit 'ready'
         .catch (err) ->
-            winston.error 'Database initialization failed', err, {}
+            console.error 'Database initialization failed', err
 
     genAPIKey: () ->
         key = new Buffer(16)

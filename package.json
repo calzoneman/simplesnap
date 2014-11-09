@@ -12,8 +12,7 @@
     "ms": "^0.6.2",
     "multiparty": "^4.0.0",
     "sqlite3": "^3.0.2",
-    "uuid": "^2.0.1",
-    "winston": "^0.8.3"
+    "uuid": "^2.0.1"
   },
   "devDependencies": {
     "coffee-script": "^1.8.0"

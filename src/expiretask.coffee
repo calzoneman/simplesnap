@@ -1,7 +1,6 @@
 Promise = require 'bluebird'
 fs = Promise.promisifyAll(require 'fs')
 path = require 'path'
-winston = require 'winston'
 
 module.exports = (config, db) ->
     clearExpiredImages = ->
@@ -15,9 +14,9 @@ module.exports = (config, db) ->
             ))
         ).then((results) ->
             if results.length > 0
-                winston.info 'Deleted %d expired images', results.length
+                console.log 'Deleted %d expired images', results.length
         ).catch((err) ->
-            winston.error 'Error deleting expired images', err
+            console.error 'Error deleting expired images', err
         )
 
     clearExpiredImages()

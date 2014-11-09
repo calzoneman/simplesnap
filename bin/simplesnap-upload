@@ -35,6 +35,6 @@ fi
 
 IMPATH=`echo "$RESULT" | grep -Poh '(?<="filename":")[^"]*'`
 if [ ! -z "$IMPATH" ]; then
-    echo -n "$SERVER$IMPATH" | xclip -i -selection clipboard
-    notify-send "Uploaded $FILE to $SERVER$IMPATH"
+    echo -n "$IMPATH" | xclip -i -selection clipboard
+    notify-send "Uploaded $FILE to $IMPATH"
 fi

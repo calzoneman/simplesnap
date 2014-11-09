@@ -1,6 +1,5 @@
 fs = require 'fs'
 path = require 'path'
-winston = require 'winston'
 
 Configuration = require './configuration'
 Database = require './db/database'
@@ -22,10 +21,10 @@ if process.argv.length > 2
     if process.argv[2] in ['--adduser', '-a']
         db.on('ready', ->
             db.addUser().then((user) ->
-                winston.info 'Created user', JSON.stringify(user.attributes)
+                console.log 'Created user', JSON.stringify(user.attributes)
                 process.exit 0
             ).catch((err) ->
-                winston.error 'Error creating user', err
+                console.error 'Error creating user', err
                 process.exit -1
             )
         )
@@ -34,10 +33,10 @@ if process.argv.length > 2
             User = db.models.User
             User.fetchAll().then((users) ->
                 users = users.map((user) -> JSON.stringify(user.attributes))
-                users.forEach((user) -> winston.info user)
+                users.forEach((user) -> console.log user)
                 process.exit 0
             ).catch((err) ->
-                winston.error 'Error listing users', err
+                console.error 'Error listing users', err
                 process.exit -1
             )
         )
@@ -52,16 +51,16 @@ if process.argv.length > 2
                 key = user.get('key')
                 return user.destroy()
             ).then( ->
-                winston.info "Deleted user #{process.argv[3]}"
+                console.log "Deleted user #{process.argv[3]}"
                 process.exit 0
             ).catch((err) ->
-                winston.error 'Deletion failed', err
+                console.error 'Deletion failed', err
                 process.exit -1
             )
         )
 
 else
-    winston.info 'Initializing webserver'
+    console.log 'Initializing webserver'
     app = new Application(config, db)
-    winston.info 'Starting delete expired images task'
+    console.log 'Starting delete expired images task'
     require('./expiretask')(config, db)
