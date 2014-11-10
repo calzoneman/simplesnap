@@ -69,7 +69,7 @@ class Application
         if not req.files.image
             return res.status(BAD_REQUEST).json(error: 'Expected image in request body')
 
-        if not req.body.expiration and @config.expirationLimit
+        if not req.body.expiration and @config.expirationLimit > 0
             return res.status(BAD_REQUEST).json(error: 'Expiration is required')
 
         delay = null
@@ -77,7 +77,7 @@ class Application
             delay = ms(req.body.expiration)
             if not delay
                 return res.status(BAD_REQUEST).json(error: 'Invalid expiration')
-            else if delay > @config.expirationLimit
+            else if @config.expirationLimit > 0 and delay > @config.expirationLimit
                 limit = ms(@config.expirationLimit)
                 return res.status(BAD_REQUEST).json(error: "Expiration exceeds limit of #{limit}")
 
