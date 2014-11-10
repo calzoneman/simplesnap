@@ -24,6 +24,14 @@ You will need Linux and node.js.  If you plan to run the server on Debian or Ubu
   3. Copy `config.template.js` to `config.js` and make any modifications you would like to the configuration
   4. Run the server with `node index.js`
 
+#### A note about Arch Linux (and other distributions where `python` is Python 3)
+
+`npm` breaks if `python` is Python 3, and is not smart enough to guess that the Python 2 interpreter might be named `python2`.  Set the `$PYTHON` environment variable before running `npm install`:
+
+```
+$ PYTHON=python2 npm install
+```
+
 ### Using MySQL/MariaDB or Postgres instead of SQLite3
 
 Simplesnap uses `knex`, which abstracts the database logic from the underlying database driver.  If you wish to use MySQL/MariaDB or Postgres instead of SQLite3, edit the configuration in `config.js` accordingly and install the appropriate node driver:
