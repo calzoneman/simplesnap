@@ -41,6 +41,17 @@ $ npm install mysql
 $ npm install pg
 ```
 
+### Upgrading from simplesnap 0.0.1
+
+Run the following:
+
+```
+$ npm install nedb
+$ node lib/migrate-0.0.1-1.0.js
+```
+
+After running these commands, verify that the import is correct (perhaps by opening snap.sqlite and examining the records in the images table).  After verifying such, it is safe to remove `images.db`, `accounts.db`, and `node_modules/nedb`.
+
 ## Adding API keys
 
 Unless you have set `config.allowAnonymousUploads = true`, you will be unable to upload images without a `x-simplesnap-auth` key.  To generate one, pass the `--adduser` or `-a` flag:
@@ -117,3 +128,14 @@ $ simplesnap-delete http://mycooldomain.com/somefile.png
 ```
 
 This script makes a `DELETE` request for an image uploaded using your authentication key.  If the image exists and is not expired, the server will delete the image and database record.
+
+
+## Help / Contact
+
+If you need help, feel free to email `cyzon [at] cyzon [dot] us` with questions.  You can also find me on the following IRC networks with the nickname `calzoneman`: `irc.esper.net`, `irc.netchat.io`, `irc.6irc.net`.
+
+For bugs and feature requests, please open a GitHub issue.  Pull requests are welcome, but please try to keep things simple.
+
+## License
+
+simplesnap is released under the MIT license.  See the `LICENSE` file for details.

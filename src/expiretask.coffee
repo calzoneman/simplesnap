@@ -19,5 +19,8 @@ module.exports = (config, db) ->
             console.error 'Error deleting expired images', err
         )
 
-    clearExpiredImages()
+    if not db.ready
+        db.once('ready', clearExpiredImages)
+    else
+        clearExpiredImages()
     setInterval(clearExpiredImages, config.deleteExpiredInterval)
