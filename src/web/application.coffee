@@ -37,7 +37,7 @@ class Application
     serveImageList: (req, res) =>
         if req.header(@config.authHeader)
             Image = @db.models.Image
-            Image.fetchAll(user_key: req.header(@config.authHeader)).then((images) =>
+            Image.where(user_key: req.header(@config.authHeader)).fetchAll().then((images) =>
                 elems = images.map((image) =>
                     return @getFullImagePath(req, image.get('filename'))
                 )

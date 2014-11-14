@@ -2,6 +2,7 @@ var assert = require('assert');
 var fs = require('fs');
 var path = require('path');
 var spawn = require('child_process').spawn;
+var Promise = require('bluebird');
 
 var Configuration = require('../lib/configuration');
 var Database = require('../lib/db/database');
@@ -184,4 +185,50 @@ describe('/upload', function () {
             done();
         });
     }));
+});
+
+describe('/images', function () {
+    var anonImage, userImage, userKey;
+
+    before(function (done) {
+        db.addUser().then(function (user) {
+            userKey = user.get('key');
+            return Promise.all([
+                db.addImage({
+                    filename: "" + Math.random(),
+                    extension: "png",
+                    expires: 10 * 60 * 1000
+                }).tap(function (img) {
+                    anonImage = img.attributes;
+                }),
+
+                db.addImage({
+                    filename: "" + Math.random(),
+                    extension: "png",
+                    expires: 10 * 60 * 1000
+                }, userKey).tap(function (img) {
+                    userImage = img.attributes;
+                })
+            ]);
+        }).then(function () {
+            done();
+        }).catch(function (err) {
+            throw err;
+        });
+    });
+
+    it('should list all and only images owned by the user', function (done) {
+        runTest({
+            method: 'GET',
+            endpoint: '/images',
+            user_key: userKey
+        }, function (code, data) {
+            data = JSON.parse(data);
+            assert(!data.error, 'Expected no error');
+            assert(data.images.length === 1, 'Expected exactly 1 image');
+            assert(data.images[0].indexOf(userImage.filename) >= 0, 'Expected userImage to be returned');
+            assert(data.images[0].indexOf(anonImage.filename) < 0, 'Expected anonImage not to be returned');
+            done();
+        });
+    });
 });
