@@ -129,6 +129,9 @@ $ simplesnap-delete http://mycooldomain.com/somefile.png
 
 This script makes a `DELETE` request for an image uploaded using your authentication key.  If the image exists and is not expired, the server will delete the image and database record.
 
+## A note about virtualhosts
+
+If you are running simplesnap behind a reverse proxy (I use nginx), make sure the `Host` header is set properly by the proxy or else the links returned by `/upload` will contain `127.0.0.1` (or whatever address the proxy is configured to connect to) instead of the correct hostname.
 
 ## Help / Contact
 
