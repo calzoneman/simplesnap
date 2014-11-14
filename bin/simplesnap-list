@@ -1,0 +1,20 @@
+#!/bin/bash
+
+SERVER="http://localhost:5000"
+KEY=`cat ~/.simplesnap_key`
+
+RESULT=`curl -H "x-simplesnap-auth: $KEY" \
+    "$SERVER/images" \
+    2>/dev/null`
+
+ERROR=`echo "$RESULT" | grep -Poh '(?<="error":")[^"]*'`
+if [ ! -z "$ERROR" ]; then
+    echo "Listing failed: $ERROR"
+    exit -1
+fi
+
+IMAGES=`echo "$RESULT" | sed 's/^{"images":\[\\(.*\)\]}$/\1/' | grep -Poh '(?<=")[^,"]*'`
+
+for IMAGE in $IMAGES; do
+    echo $IMAGE
+done

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+SERVER="http://localhost:5000"
+KEY=`cat ~/.simplesnap_key`
+FILE=`echo $1 | grep -Poh "(?<=$SERVER/).*"`
+if [ -z "$FILE" ];then
+    echo "No file specified"
+    exit -1
+fi
+
+RESULT=`curl -X DELETE \
+    -H "x-simplesnap-auth: $KEY" \
+    "$SERVER/$FILE"`
+
+ERROR=`echo "$RESULT" | grep -Poh '(?<="error":")[^"]*'`
+if [ ! -z "$ERROR" ]; then
+    echo "Delete failed ($FILE): $ERROR"
+    exit -1
+fi
+
+DELETED=`echo "$RESULT" | grep -Poh '(?<="deleted":")[^"]*'`
+if [ ! -z "$DELETED" ]; then
+    echo "Deleted $DELETED"
+fi

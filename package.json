@@ -1,12 +1,26 @@
 {
-    "author": "Calvin 'calzoneman'/'cyzon' Montgomery",
-    "name": "SimpleSnap",
-    "description": "Simple webserver for hosting temporary image files",
-    "version": "0.0.1",
-    "dependencies": {
-        "express": "*",
-        "mmmagic": "*",
-        "multiparty": "*",
-        "nedb": "*"
-    }
+  "author": "Calvin 'calzoneman'/'cyzon' Montgomery",
+  "name": "SimpleSnap",
+  "description": "Simple webserver for hosting temporary image files",
+  "version": "1.0.0",
+  "dependencies": {
+    "bluebird": "^2.3.11",
+    "bookshelf": "^0.7.9",
+    "express": "^4.10.1",
+    "knex": "^0.7.3",
+    "mmmagic": "^0.3.11",
+    "ms": "^0.6.2",
+    "multiparty": "^4.0.0",
+    "sqlite3": "^3.0.2",
+    "uuid": "^2.0.1"
+  },
+  "devDependencies": {
+    "coffee-script": "^1.8.0",
+    "mocha": "^2.0.1"
+  },
+  "repository": "https://github.com/calzoneman/simplesnap",
+  "scripts": {
+    "prepublish": "coffee -co lib/ src/",
+    "test": "mocha"
+  }
 }

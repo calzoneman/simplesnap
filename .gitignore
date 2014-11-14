@@ -12,7 +12,10 @@ pids
 logs
 results
 im
+uploads
 
 npm-debug.log
 node_modules
 
+*.sqlite
+*.swp
