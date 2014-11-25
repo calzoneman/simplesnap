@@ -29,7 +29,7 @@ module.exports = function (config) {
         'image/jpeg': 'jpg',
         'image/png': 'png',
         'image/webp': 'webp',
-        'image/svg': 'svg',
+        'image/svg+xml': 'svg',
         'video/webm': 'webm'
     };
 

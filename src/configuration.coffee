@@ -11,7 +11,7 @@ DEFAULT =
         'image/jpeg': 'jpg',
         'image/png': 'png',
         'image/webp': 'webp',
-        'image/svg': 'svg',
+        'image/svg+xml': 'svg',
         'video/webm': 'webm'
     maxFileSize: 8 * 1024 * 1024
     uploadDir: path.resolve(__dirname, '..', 'uploads')
