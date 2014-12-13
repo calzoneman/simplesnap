@@ -1,0 +1,98 @@
+#!/usr/bin/python
+
+from __future__ import print_function
+import requests
+import subprocess
+
+UPLOAD_URL = '{0}/upload'
+
+ZENITY_EXPIRATION_ARGS = [
+    'zenity', '--list', '--title="Choose Expiration"', '--column="Expiration"',
+    '10m',
+    '1h',
+    '12h',
+    '1d',
+    '7d',
+    '30d',
+    'Never'
+]
+
+class Config(object):
+    def __init__(self, server='http://localhost:5000', key=''):
+        self.server = server
+        self.key = key
+
+class Notification(object):
+    def __init__(self, title, text, timeout=2000):
+        self.title = title
+        self.text = text
+        self.timeout = timeout
+
+    def show(self):
+        args = ['notify-send', self.title, self.text]
+        if self.timeout:
+            args += ['-t', self.timeout]
+        subprocess.call(args)
+
+def copy_to_clipboard(text):
+    subprocess.call(['xclip', '-i', '-selection', 'clipboard'], stdin=text)
+
+def zenity_get_expiration():
+    return subprocess.check_output(ZENITY_EXPIRATION_ARGS)
+
+def _upload_image(filename, config, expires=None):
+    url = UPLOAD_URL.format(config.server.rstrip('/'))
+    files = {
+        'image': open(filename, 'rb'),
+    }
+    data = {}
+
+    if config.key:
+        data['key'] = config.key
+    if expires:
+        data['expires'] = expires
+
+    r = requests.post(url, files=files, data=data)
+    result = r.json()
+
+    if 'error' in result:
+        raise RuntimeError(result['error'])
+
+    return result
+
+def upload_image_interactive(filename, config, expires=None):
+    if not expires:
+        expires = zenity_get_expiration()
+
+    try:
+        result = _upload_image(filename, config, expires)
+    except Exception as e:
+        Notification('Upload failed', e).show()
+        return
+
+    try:
+        copy_to_clipboard(result['filename'])
+    except Exception as e:
+        Notification('Copy to clipboard failed', e).show()
+
+    Notification('Upload succeeded', 'Uploaded {0} to {1}'.format(
+        filename, result['filename'])).show()
+
+def main():
+    import argparse
+
+    p = argparse.ArgumentParser(description='Upload, list, and delete files '
+        'on a Simplesnap server')
+    p.add_argument('-c', '--config', help='Load a specified configuration file')
+    p.add_argument('-e', '--expiration', help='Specify expiration for an upload')
+    p.add_argument('-k', '--key', help='Specify the Simplesnap auth key to use')
+    p.add_argument('-s', '--server', help='Specify the server to connect to')
+    p.add_argument('command', choices=['upload', 'upload-interactive'])
+    p.add_argument('image', help='Local path to image for uploading, or URL for '
+        'deletion')
+
+    import sys
+    args = p.parse_args(sys.argv[1:])
+
+if __name__ == '__main__':
+    main()
