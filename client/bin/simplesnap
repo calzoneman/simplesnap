@@ -1,56 +1,126 @@
 #!/usr/bin/python
 
 from __future__ import print_function
+import os
 import requests
 import subprocess
+import sys
 
-UPLOAD_URL = '{0}/upload'
+GLOBAL_SIMPLESNAPRC = '/etc/simplesnap/client.conf'
+LOCAL_SIMPLESNAPRC = os.path.join(os.getenv('HOME'), '.config',
+    'simplesnap.conf')
 
-ZENITY_EXPIRATION_ARGS = [
-    'zenity', '--list', '--title="Choose Expiration"', '--column="Expiration"',
-    '10m',
-    '1h',
-    '12h',
-    '1d',
-    '7d',
-    '30d',
-    'Never'
-]
+# Utilities
 
-class Config(object):
-    def __init__(self, server='http://localhost:5000', key=''):
-        self.server = server
-        self.key = key
+ALLOWED_CONFIG_KEYS = set(['server', 'key'])
+def load_config_file(filename):
+    '''Internal function to load Simplesnap configuration files
+
+    The expected format of each line is
+        key=value
+
+    If a line is invalid, an Exception is raised with the filename, error
+    message, and line number
+    '''
+
+    config = {}
+    with open(filename, 'r') as f:
+        for i, line in enumerate(f):
+            try:
+                config.update([line.split('=')])
+            except Exception as e:
+                raise Exception(
+                    'Configuration file {0} is invalid: '
+                    '{1} on line {2}'.format(filename, e, i+1))
+    return config
+
+def load_config(args):
+    '''Loads Simplesnap client configuration
+
+    Loads from the following locations in order of increasing precedence:
+      - /etc/simplesnap/client.conf
+      - $HOME/.config/simplesnap.conf
+      - args.config (if not None)
+    '''
+
+    config = { 'server': None, 'key': None }
+    files = [GLOBAL_SIMPLESNAPRC, LOCAL_SIMPLESNAPRC]
+    if args.config is not None:
+        files.append(args.config)
+
+    for f in files:
+        if os.path.isfile(f):
+            config.update(load_config_file(f))
+
+    if args.server:
+        config['server'] = args.server
+    if args.key:
+        config['key'] = args.key
+
+    if not config['server']:
+        raise Exception('Missing required configuration key "server" (tried '
+            + ', '.join(files) + ')')
+
+    return config
 
 class Notification(object):
+    '''Represents a notification message sent via notify-send
+
+    Title and text are provided to notify-send as positional arguments.
+    If timeout is not None, it represents the number of milliseconds that the
+    notification should be active (default 2000)
+    '''
+
     def __init__(self, title, text, timeout=2000):
         self.title = title
         self.text = text
         self.timeout = timeout
 
     def show(self):
+        '''Calls notify-send to display the notification'''
         args = ['notify-send', self.title, self.text]
-        if self.timeout:
+        if self.timeout is not None:
             args += ['-t', self.timeout]
         subprocess.call(args)
 
 def copy_to_clipboard(text):
+    '''Calls xclip to copy the given text to the clipboard'''
     subprocess.call(['xclip', '-i', '-selection', 'clipboard'], stdin=text)
 
 def zenity_get_expiration():
+    '''Uses a zenity prompt to ask the user for an expiration time'''
+    args = [
+        'zenity',
+        '--list',
+        '--title="Choose Expiration"',
+        '--column="Expiration"',
+        '10m',
+        '1h',
+        '12h',
+        '1d',
+        '7d',
+        '30d',
+        'Never'
+    ]
     return subprocess.check_output(ZENITY_EXPIRATION_ARGS)
 
-def _upload_image(filename, config, expires=None):
-    url = UPLOAD_URL.format(config.server.rstrip('/'))
+# Image uploads
+
+def upload_image(filename, config, expiration=None):
+    '''Uploads an image to a Simplesnap server'''
+    url = '{0}/upload'.format(config['server'].rstrip('/'))
     files = {
         'image': open(filename, 'rb'),
     }
     data = {}
 
-    if config.key:
-        data['key'] = config.key
-    if expires:
-        data['expires'] = expires
+    if expiration == 'Never':
+        expiration = 0
+
+    if config['key']:
+        data['key'] = config['key']
+    if expiration is not None:
+        data['expires'] = expiration
 
     r = requests.post(url, files=files, data=data)
     result = r.json()
@@ -60,15 +130,23 @@ def _upload_image(filename, config, expires=None):
 
     return result
 
-def upload_image_interactive(filename, config, expires=None):
-    if not expires:
-        expires = zenity_get_expiration()
-
+def upload_image_interactive(args):
     try:
-        result = _upload_image(filename, config, expires)
+        config = load_config(args)
     except Exception as e:
         Notification('Upload failed', e).show()
-        return
+        sys.exit(1)
+
+    if args.expiration:
+        expiration = args.expiration
+    else:
+        expiration = zenity_get_expiration()
+
+    try:
+        result = upload_image(args.image, config, expiration)
+    except Exception as e:
+        Notification('Upload failed', e).show()
+        sys.exit(1)
 
     try:
         copy_to_clipboard(result['filename'])
@@ -77,6 +155,26 @@ def upload_image_interactive(filename, config, expires=None):
 
     Notification('Upload succeeded', 'Uploaded {0} to {1}'.format(
         filename, result['filename'])).show()
+
+def upload_image_cli(args):
+    try:
+        config = load_config(args)
+    except Exception as e:
+        print('Upload failed: {0}'.format(e), file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        result = upload_image(args.image, config, args.expiration)
+    except Exception as e:
+        print('Upload failed: {0}'.format(e), file=sys.stderr)
+        sys.exit(1)
+
+    print(result['filename'])
+
+COMMAND_MAP = {
+    'upload': upload_image_cli,
+    'upload-interactive': upload_image_interactive
+}
 
 def main():
     import argparse
@@ -89,10 +187,17 @@ def main():
     p.add_argument('-s', '--server', help='Specify the server to connect to')
     p.add_argument('command', choices=['upload', 'upload-interactive'])
     p.add_argument('image', help='Local path to image for uploading, or URL for '
-        'deletion')
+        'deletion', nargs='?')
 
     import sys
     args = p.parse_args(sys.argv[1:])
+
+    if not args.image and args.command != 'list':
+        print('Positional argument image is required for command {0}'.format(
+            args.command))
+        sys.exit(1)
+
+    COMMAND_MAP[args.command](args)
 
 if __name__ == '__main__':
     main()
