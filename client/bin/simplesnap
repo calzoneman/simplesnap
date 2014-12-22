@@ -27,7 +27,7 @@ def load_config_file(filename):
     with open(filename, 'r') as f:
         for i, line in enumerate(f):
             try:
-                config.update([line.split('=')])
+                config.update([[x.strip() for x in line.split('=', 1)]])
             except Exception as e:
                 raise Exception(
                     'Configuration file {0} is invalid: '
@@ -113,16 +113,18 @@ def upload_image(filename, config, expiration=None):
         'image': open(filename, 'rb'),
     }
     data = {}
+    headers = {}
 
     if expiration == 'Never':
         expiration = 0
 
     if config['key']:
-        data['key'] = config['key']
+        headers['x-simplesnap-auth'] = config['key']
     if expiration is not None:
-        data['expires'] = expiration
+        data['expiration'] = expiration
 
-    r = requests.post(url, files=files, data=data)
+    print('UPLOAD_IMAGE: ',url)
+    r = requests.post(url, files=files, data=data, headers=headers)
     result = r.json()
 
     if 'error' in result:
@@ -130,12 +132,12 @@ def upload_image(filename, config, expiration=None):
 
     return result
 
-def upload_image_interactive(args):
-    try:
-        config = load_config(args)
-    except Exception as e:
-        Notification('Upload failed', e).show()
-        sys.exit(1)
+def upload_image_interactive(args, config):
+    '''Uploads an image interactively
+
+    Uses zenity to prompt for expiration and displays error/success messages
+    with notify-send rather than print()
+    '''
 
     if args.expiration:
         expiration = args.expiration
@@ -156,12 +158,12 @@ def upload_image_interactive(args):
     Notification('Upload succeeded', 'Uploaded {0} to {1}'.format(
         filename, result['filename'])).show()
 
-def upload_image_cli(args):
-    try:
-        config = load_config(args)
-    except Exception as e:
-        print('Upload failed: {0}'.format(e), file=sys.stderr)
-        sys.exit(1)
+def upload_image_cli(args, config):
+    '''Uploads an image non-interactively
+
+    Displays error/success messages with print().
+    Errors are logged to stderr.
+    '''
 
     try:
         result = upload_image(args.image, config, args.expiration)
@@ -171,9 +173,48 @@ def upload_image_cli(args):
 
     print(result['filename'])
 
+# List images
+
+def list_images(args, config):
+    '''Lists images associated with a simplesnap account'''
+    url = '{0}/images'.format(config['server'].rstrip('/'))
+    headers = {}
+
+    if config['key']:
+        headers['x-simplesnap-auth'] = config['key']
+
+    r = requests.get(url, headers=headers)
+    result = r.json()
+
+    if 'error' in result:
+        print(result['error'], file=sys.stderr)
+
+    for image in result['images']:
+        print(image)
+
+def delete_image(args, config):
+    '''Deletes an image from a Simplesnap server'''
+
+    filename = args.image.replace(config['server'], '').lstrip('/')
+    url = '{0}/{1}'.format(config['server'].rstrip('/'), filename)
+    headers = {}
+
+    if config['key']:
+        headers['x-simplesnap-auth'] = config['key']
+
+    r = requests.delete(url, headers=headers)
+    result = r.json()
+
+    if 'error' in result:
+        print(result['error'], file=sys.stderr)
+
+    print('Deleted {0}'.format(result['deleted']))
+
 COMMAND_MAP = {
     'upload': upload_image_cli,
-    'upload-interactive': upload_image_interactive
+    'upload-interactive': upload_image_interactive,
+    'list': list_images,
+    'delete': delete_image
 }
 
 def main():
@@ -185,7 +226,8 @@ def main():
     p.add_argument('-e', '--expiration', help='Specify expiration for an upload')
     p.add_argument('-k', '--key', help='Specify the Simplesnap auth key to use')
     p.add_argument('-s', '--server', help='Specify the server to connect to')
-    p.add_argument('command', choices=['upload', 'upload-interactive'])
+    p.add_argument('command', choices=['upload', 'upload-interactive',
+        'list', 'delete'])
     p.add_argument('image', help='Local path to image for uploading, or URL for '
         'deletion', nargs='?')
 
@@ -197,7 +239,17 @@ def main():
             args.command))
         sys.exit(1)
 
-    COMMAND_MAP[args.command](args)
+    try:
+        config = load_config(args)
+    except Exception as e:
+        if args.command == 'upload-interactive':
+            Notification('Failed to load configuration', e).show()
+        else:
+            print('Failed to load configuration: {0}'.format(e),
+            file=sys.stderr)
+        sys.exit(1)
+
+    COMMAND_MAP[args.command](args, config)
 
 if __name__ == '__main__':
     main()
