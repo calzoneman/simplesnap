@@ -12,9 +12,9 @@ class Application
     constructor: (@config, @db) ->
         @app = express()
 
-        @app.use(require('./authorization')(config, db))
-        @app.use(require('./fileparser')(config))
-        @app.use(require('./detectmime')(config))
+        @app.use(require('./authorization')(@config, @db))
+        @app.use(require('./fileparser')(@config))
+        @app.use(require('./detectmime')(@config))
 
         extensions = (ext for mime, ext of @config.allowedMimeTypes).join('|')
         basePath = @config.basePath.replace(/\//g, '\\/')
