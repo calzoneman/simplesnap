@@ -22,7 +22,7 @@ if [ -z "$EXPIRES" ]; then
     exit 0
 fi
 
-RESULT=`curl -F "image=@$FILE" \
+RESULT=`curl -F "image=@\"$FILE\"" \
     -F "expiration=$EXPIRES" \
     -H "x-simplesnap-auth: $KEY" \
     "$SERVER/upload"`
