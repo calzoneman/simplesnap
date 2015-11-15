@@ -30,9 +30,15 @@ class Application
         for [host, port] in @config.bindAddresses
             @app.listen(port, host)
 
+    getProtocol: (req) ->
+        if req.ip in ['127.0.0.1', '::1'] and req.header('x-forwarded-proto')
+            return req.header('x-forwarded-proto')
+        else
+            return req.protocol
+
     getFullImagePath: (req, filename) =>
         filepath = @config.basePath + filename
-        return "#{req.protocol}://#{req.header('host')}#{filepath}"
+        return "#{@getProtocol(req)}://#{req.header('host')}#{filepath}"
 
     serveImageList: (req, res) =>
         if req.header(@config.authHeader)
