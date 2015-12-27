@@ -31,7 +31,7 @@ class Application
             @app.listen(port, host)
 
     getProtocol: (req) ->
-        if req.ip in ['127.0.0.1', '::1'] and req.header('x-forwarded-proto')
+        if req.ip in ['127.0.0.1', '::1', '::ffff:127.0.0.1'] and req.header('x-forwarded-proto')
             return req.header('x-forwarded-proto')
         else
             return req.protocol
@@ -97,6 +97,7 @@ class Application
             return fs.renameAsync(file.path,
                     path.join(@config.storageDir, image.get('filename')))
         ).then( ->
+            console.log('Returning ' + JSON.stringify(data))
             res.json(data)
         ).catch((err) ->
             res.status(INTERNAL_SERVER_ERROR).json(error: 'Unknown error')
