@@ -20,7 +20,7 @@
   },
   "repository": "https://github.com/calzoneman/simplesnap",
   "scripts": {
-    "prepublish": "coffee -co lib/ src/",
+    "postinstall": "coffee -co lib/ src/",
     "test": "mocha"
   }
 }
