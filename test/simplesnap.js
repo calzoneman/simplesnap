@@ -68,6 +68,7 @@ beforeEach(function (done) {
 
 after(function () {
     fs.unlinkSync(config.db.connection.filename);
+    process.exit(0);
 });
 
 describe('/upload', function () {
